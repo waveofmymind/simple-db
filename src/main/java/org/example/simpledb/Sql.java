@@ -36,6 +36,7 @@ public class Sql {
             }
             inClause.append("?");
             parameters.add(values.toArray()[i]);
+
         }
 
         String newSqlPart = sqlPart.replace("?", inClause.toString());
@@ -54,15 +55,19 @@ public class Sql {
     }
 
     public long insert() {
-        try (Connection conn = DriverManager.getConnection(simpleDb.getUrl(), simpleDb.getUsername(), simpleDb.getPassword());
-             PreparedStatement pstmt = conn.prepareStatement(getSql(), Statement.RETURN_GENERATED_KEYS)) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = getSimpleDb().getConnection();
+            pstmt = conn.prepareStatement(getSql(), Statement.RETURN_GENERATED_KEYS);
+
+            if (getSimpleDb().isDevMode()) {
+                System.out.println(getSql());
+            }
 
             Object[] parameters = getParameters();
             for (int i = 0; i < parameters.length; i++) {
                 pstmt.setObject(i + 1, parameters[i]);
-            }
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
             }
 
             pstmt.executeUpdate();
@@ -74,9 +79,21 @@ public class Sql {
 
         } catch (SQLException e) {
             e.printStackTrace();
+        } finally {
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (conn != null) {
+                getSimpleDb().closeConnection();
+            }
         }
         return -1;
     }
+
 
 
     public long update() {
