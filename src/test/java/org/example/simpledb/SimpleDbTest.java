@@ -75,14 +75,6 @@ class SimpleDbTest {
     public void insert() {
         Sql sql = simpleDb.genSql();
 
-         /*
-        INSERT INTO article
-        SET createdDate = NOW() ,
-        modifiedDate = NOW() ,
-        title = '제목 new' ,
-        body = '내용 new'
-        */
-
         sql.append("INSERT INTO article")
                 .append("SET createdDate = NOW()")
                 .append(", modifiedDate = NOW()")
