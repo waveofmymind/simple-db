@@ -4,6 +4,8 @@ import jdk.jfr.DataAmount;
 import lombok.Data;
 
 import java.sql.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Data
 public class SimpleDb {
@@ -13,45 +15,69 @@ public class SimpleDb {
     private final String password;
     private boolean devMode;
 
+    private final int MAX_POOL_SIZE = 2;
+
+    private BlockingQueue<Connection> connectionPool;
+
     private ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
 
     public SimpleDb(String host, String username, String password, String dbName) {
         this.url = "jdbc:mysql://" + host + ":3306/" + dbName;
         this.username = username;
         this.password = password;
+
+        initializeConnectionPool();
     }
 
     public void setDevMod(boolean devMode) {
         this.devMode = devMode;
     }
 
-    public Connection getConnection() throws SQLException {
-        Connection conn = threadLocalConnection.get();
-
-        if (conn == null) {
-            conn = DriverManager.getConnection(url, username, password);
-            threadLocalConnection.set(conn);
+    private void initializeConnectionPool() {
+        try {
+            connectionPool = new LinkedBlockingQueue<>(MAX_POOL_SIZE);
+            for (int i = 0; i < MAX_POOL_SIZE; i++) {
+                connectionPool.offer(createConnection());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-
-        return conn;
+    }
+    public int getAvailableConnectionCount() {
+        return connectionPool.size();
     }
 
-    public void closeConnection() {
-        Connection conn = threadLocalConnection.get();
-        if (conn != null) {
-            try {
-                conn.close();
-                threadLocalConnection.remove();
-            } catch (SQLException e) {
-                e.printStackTrace();
+    private Connection createConnection() throws SQLException {
+        return DriverManager.getConnection(url, username, password);
+    }
 
+    public Connection getConnection() throws SQLException {
+        Connection connection = threadLocalConnection.get();
+        if (connection == null) {
+            try {
+                connection = connectionPool.take();
+                threadLocalConnection.set(connection);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
+        return connection;
     }
 
+    public void releaseConnection(Connection connection) {
+        if (connection != null) {
+            connectionPool.offer(connection);
+            threadLocalConnection.remove();
+        }
+    }
+
+
     public void run(String sql) {
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
+        Connection conn = null;
+        Statement stmt = null;
+        try {
+            conn = getConnection();
+            stmt = conn.createStatement();
 
             if (devMode) {
                 System.out.println(sql);
@@ -62,13 +88,23 @@ public class SimpleDb {
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            closeConnection();
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            releaseConnection(conn);
         }
     }
 
     public void run(String sql, Object... params) {
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(sql);
 
             for (int i = 0; i < params.length; i++) {
                 pstmt.setObject(i + 1, params[i]);
@@ -83,46 +119,21 @@ public class SimpleDb {
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            closeConnection();
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            releaseConnection(conn);
         }
     }
-
-    public Sql genSql() {
+    public Sql genSql() throws SQLException {
         return new Sql(this);
     }
 
-    public void startTransaction() {
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            closeConnection();
-        }
-    }
 
-    public void commit() {
-        try (Connection conn = getConnection()) {
-            conn.commit();
-            conn.setAutoCommit(true);
-        } catch (SQLException e) {
-            e.printStackTrace();
-
-        } finally {
-            closeConnection();
-        }
-    }
-
-    public void rollback() {
-        try (Connection conn = getConnection()) {
-            conn.rollback();
-            conn.setAutoCommit(true);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            closeConnection();
-        }
-    }
 
 
 }
