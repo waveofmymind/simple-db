@@ -2,7 +2,6 @@ package org.example.simpledb.article;
 
 import lombok.Data;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
 @Data
