@@ -330,8 +330,7 @@ class SimpleDbTest {
             conn = simpleDb.getConnection();
 
             // 트랜잭션 시작
-            conn.setAutoCommit(false);
-
+            simpleDb.startTransaction(conn);
             // Insert a new record
             Sql insertSql = simpleDb.genSql();
             insertSql.append("INSERT INTO article")
@@ -359,25 +358,14 @@ class SimpleDbTest {
             updateSql.update(conn);
 
             // 트랜잭션 커밋
-            conn.commit();
+            simpleDb.commitTransaction(conn);
         } catch (SQLException e) {
             e.printStackTrace();
-            // 트랜잭션 롤백
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
+            simpleDb.rollbackTransaction(conn);
         } finally {
             if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    simpleDb.releaseConnection(conn);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+                simpleDb.endTransaction(conn);
+                simpleDb.releaseConnection(conn);
             }
         }
     }
