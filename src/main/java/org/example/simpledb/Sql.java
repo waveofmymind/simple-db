@@ -63,36 +63,26 @@ public class Sql {
     }
 
     public long insert(Connection conn) {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = conn.prepareStatement(getSql(), Statement.RETURN_GENERATED_KEYS);
+        String sql = getSql();
+        Object[] parameters = getParameters();
 
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql);
+        }
 
-            Object[] parameters = getParameters();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 0; i < parameters.length; i++) {
                 pstmt.setObject(i + 1, parameters[i]);
             }
 
             pstmt.executeUpdate();
-            ResultSet rs = pstmt.getGeneratedKeys();
-
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return -1;
     }
@@ -128,67 +118,45 @@ public class Sql {
     }
 
     public long update(Connection conn) {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = conn.prepareStatement(getSql());
+        String sql = getSql();
+        Object[] parameters = getParameters();
 
-            Object[] parameters = getParameters();
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql);
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < parameters.length; i++) {
                 pstmt.setObject(i + 1, parameters[i]);
             }
-
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
-
             return pstmt.executeUpdate();
-
         } catch (SQLException e) {
             if (simpleDb.isDevMode()) {
                 e.printStackTrace();
             }
-        } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return -1;
     }
 
-
     public long delete(Connection conn) {
-        PreparedStatement pstmt = null;
-        try {
-            pstmt = conn.prepareStatement(getSql());
+        String sql = getSql();
+        Object[] parameters = getParameters();
 
-            Object[] parameters = getParameters();
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql);
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < parameters.length; i++) {
                 pstmt.setObject(i + 1, parameters[i]);
             }
-
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
-
             return pstmt.executeUpdate();
-
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
         return -1;
     }
+
 
 
     public LocalDateTime selectDatetime(Connection conn) {
