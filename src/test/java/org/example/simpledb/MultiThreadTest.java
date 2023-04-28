@@ -2,10 +2,8 @@ package org.example.simpledb;
 
 import org.example.simpledb.article.Article;
 import org.example.simpledb.article.Column;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
+
 import java.time.LocalDateTime;
 
 import java.lang.reflect.Field;
@@ -18,8 +16,10 @@ import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 
 public class MultiThreadTest {
 
@@ -65,6 +65,7 @@ public class MultiThreadTest {
 
 
     @Test
+    @Order(1)
     public void selectRowMultiThreaded() throws InterruptedException, SQLException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch latch = new CountDownLatch(2);
@@ -125,6 +126,7 @@ public class MultiThreadTest {
     }
 
     @Test
+    @Order(2)
     public void testConnectionPoolCapacity() throws InterruptedException {
 
         int threadCount = 5; // 테스트할 쓰레드 수
@@ -160,6 +162,51 @@ public class MultiThreadTest {
         int availableConnections = simpleDb.getAvailableConnectionCount();
         assertEquals(2, availableConnections); // 커넥션 풀의 사용 가능한 커넥션 수 확인
     }
+
+    @Test
+    @Order(3)
+    public void testConnectionTimeout() throws InterruptedException {
+        // 쓰레드 풀 생성
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(2);
+
+        // 첫 번째 쓰레드 작업: 커넥션을 가져온 후 35초 동안 대기
+        Runnable firstThreadTask = () -> {
+            Connection conn = null;
+            try {
+                conn = simpleDb.getConnection();
+                Thread.sleep(35000); // 35초 대기
+            } catch (SQLException | InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                if (conn != null) {
+                    simpleDb.releaseConnection(conn);
+                }
+                latch.countDown();
+            }
+        };
+
+        // 두 번째 쓰레드 작업: 31초 후에 커넥션을 요청하고, 사용 가능한지 확인
+        Runnable secondThreadTask = () -> {
+            try {
+                Thread.sleep(31000); // 31초 대기
+                Connection conn = simpleDb.getConnection();
+                assertNotNull(conn);
+            } catch (SQLException | InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                latch.countDown();
+            }
+        };
+
+        // 쓰레드 작업 제출
+        executor.submit(firstThreadTask);
+        executor.submit(secondThreadTask);
+        // 모든 작업이 완료될 때까지 대기
+        latch.await();
+        executor.shutdown();
+    }
+
 
 
     private void assertArticleMap(Map<String, Object> articleMap) {
