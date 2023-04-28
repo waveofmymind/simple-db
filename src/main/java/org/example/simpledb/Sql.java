@@ -14,12 +14,10 @@ import java.sql.*;
 public class Sql {
     private final StringBuilder sqlBuilder;
     private final List<Object> parameters;
-    private final SimpleDb simpleDb;
 
-    public Sql(SimpleDb simpleDb) throws SQLException {
+    public Sql() throws SQLException {
         this.sqlBuilder = new StringBuilder();
         this.parameters = new ArrayList<>();
-        this.simpleDb = simpleDb;
     }
 
     public Sql append(String sqlPart, Object... params) {
@@ -45,7 +43,6 @@ public class Sql {
         return this;
     }
 
-
     public String getSql() {
         return sqlBuilder.toString();
     }
@@ -66,9 +63,6 @@ public class Sql {
         String sql = getSql();
         Object[] parameters = getParameters();
 
-        if (simpleDb.isDevMode()) {
-            System.out.println(sql);
-        }
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 0; i < parameters.length; i++) {
@@ -81,6 +75,7 @@ public class Sql {
                     return rs.getLong(1);
                 }
             }
+            System.out.println(sql);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -92,9 +87,6 @@ public class Sql {
         try (PreparedStatement pstmt = prepareStatement(conn, getSql(), getParameters());
              ResultSet rs = pstmt.executeQuery()) {
 
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
 
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
@@ -121,9 +113,6 @@ public class Sql {
         String sql = getSql();
         Object[] parameters = getParameters();
 
-        if (simpleDb.isDevMode()) {
-            System.out.println(sql);
-        }
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < parameters.length; i++) {
@@ -131,9 +120,8 @@ public class Sql {
             }
             return pstmt.executeUpdate();
         } catch (SQLException e) {
-            if (simpleDb.isDevMode()) {
-                e.printStackTrace();
-            }
+            e.printStackTrace();
+
         }
         return -1;
     }
@@ -141,10 +129,6 @@ public class Sql {
     public long delete(Connection conn) {
         String sql = getSql();
         Object[] parameters = getParameters();
-
-        if (simpleDb.isDevMode()) {
-            System.out.println(sql);
-        }
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < parameters.length; i++) {
@@ -156,7 +140,6 @@ public class Sql {
         }
         return -1;
     }
-
 
 
     public LocalDateTime selectDatetime(Connection conn) {
@@ -169,10 +152,6 @@ public class Sql {
                 datetime = timestamp.toLocalDateTime();
             }
 
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -182,10 +161,6 @@ public class Sql {
     public Long selectLong(Connection conn) {
         try (PreparedStatement pstmt = prepareStatement(conn, getSql(), getParameters());
              ResultSet rs = pstmt.executeQuery()) {
-
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
 
             return rs.next() ? rs.getLong(1) : null;
 
@@ -199,9 +174,6 @@ public class Sql {
         try (PreparedStatement pstmt = prepareStatement(conn, getSql(), getParameters());
              ResultSet rs = pstmt.executeQuery()) {
 
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
 
             return rs.next() ? rs.getString(1) : null;
 
@@ -215,10 +187,6 @@ public class Sql {
         List<T> result = new ArrayList<>();
         try (PreparedStatement pstmt = prepareStatement(conn, getSql(), getParameters());
              ResultSet rs = pstmt.executeQuery()) {
-
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
 
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
@@ -248,9 +216,6 @@ public class Sql {
         try (PreparedStatement pstmt = prepareStatement(conn, getSql(), getParameters());
              ResultSet rs = pstmt.executeQuery()) {
 
-            if (simpleDb.isDevMode()) {
-                System.out.println(getSql());
-            }
 
             while (rs.next()) {
                 result.add(rs.getLong(1));
