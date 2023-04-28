@@ -17,7 +17,6 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-
 class SimpleDbTest {
 
     private SimpleDb simpleDb;
@@ -100,11 +99,15 @@ class SimpleDbTest {
                 .append(", title = ?", "제목 new")
                 .append(", body = ?", "내용 new");
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
         long newId = sql.insert(conn);
 
         assertThat(newId).isGreaterThan(0);
 
     }
+
     @DisplayName("레코드 수정 테스트")
     @Test
     public void update() throws SQLException {
@@ -124,11 +127,16 @@ class SimpleDbTest {
                 .append("SET title = ?", "제목 new")
                 .append("WHERE id IN (?, ?, ?, ?)", 0, 1, 2, 3);
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         // 수정된 row 개수
         long affectedRowsCount = sql.update(conn);
 
         assertThat(affectedRowsCount).isEqualTo(3);
     }
+
     @DisplayName("레코드 삭제 테스트")
     @Test
     public void delete() throws SQLException {
@@ -146,11 +154,16 @@ class SimpleDbTest {
                 .append("FROM article")
                 .append("WHERE id IN (?, ?, ?)", 0, 1, 3);
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         // 삭제된 row 개수
         long affectedRowsCount = sql.delete(conn);
 
         assertThat(affectedRowsCount).isEqualTo(2);
     }
+
     @DisplayName("DB 현재 시간 조회 테스트")
     @Test
     public void selectDatetime() throws SQLException {
@@ -162,12 +175,18 @@ class SimpleDbTest {
         SELECT NOW()
         */
         sql.append("SELECT NOW()");
+
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         LocalDateTime datetime = sql.selectDatetime(conn);
 
         long diff = ChronoUnit.SECONDS.between(datetime, LocalDateTime.now());
 
         assertThat(diff).isLessThanOrEqualTo(1L);
     }
+
     @DisplayName("레코드 ID값 조회 테스트")
     @Test
     public void selectLong() throws SQLException {
@@ -184,10 +203,15 @@ class SimpleDbTest {
                 .append("FROM article")
                 .append("WHERE id = 1");
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         Long id = sql.selectLong(conn);
 
         assertThat(id).isEqualTo(1);
     }
+
     @DisplayName("레코드 제목 조회 테스트")
     @Test
     public void selectString() throws SQLException {
@@ -205,10 +229,15 @@ class SimpleDbTest {
                 .append("FROM article")
                 .append("WHERE id = 1");
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         String title = sql.selectString(conn);
 
         assertThat(title).isEqualTo("제목1");
     }
+
     @DisplayName("레코드 전체 조회 테스트")
     @Test
     public void selectRow() throws SQLException {
@@ -223,6 +252,11 @@ class SimpleDbTest {
         WHERE id = 1
         */
         sql.append("SELECT * FROM article WHERE id = 1");
+
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         Map<String, Object> articleMap = sql.selectRow(conn);
 
         assertThat(articleMap.get("id")).isEqualTo(1L);
@@ -232,6 +266,7 @@ class SimpleDbTest {
         assertThat(articleMap.get("modifiedDate")).isInstanceOf(LocalDateTime.class);
         assertThat(articleMap.get("isBlind")).isEqualTo(false);
     }
+
     @DisplayName("레코드 3개 리밋 조회 테스트")
     @Test
     public void selectArticles() throws SQLException {
@@ -246,7 +281,12 @@ class SimpleDbTest {
         LIMIT 3
         */
         sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
-        List<Article> articleDtoList = sql.selectRows(conn,Article.class);
+
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
+        List<Article> articleDtoList = sql.selectRows(conn, Article.class);
 
         IntStream.range(0, articleDtoList.size()).forEach(i -> {
             long id = i + 1;
@@ -261,6 +301,7 @@ class SimpleDbTest {
             assertThat(articleDto.getIsBlind()).isFalse();
         });
     }
+
     @DisplayName("파라미터 바인딩 테스트")
     @Test
     public void selectBind() throws SQLException {
@@ -272,10 +313,15 @@ class SimpleDbTest {
                 .append("WHERE id BETWEEN ? AND ?", 1, 3)
                 .append("AND title LIKE CONCAT('%', ? '%')", "제목");
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         long count = sql.selectLong(conn);
 
         assertThat(count).isEqualTo(3);
     }
+
     @DisplayName("IN 절 테스트")
     @Test
     public void selectIn() throws SQLException {
@@ -292,10 +338,15 @@ class SimpleDbTest {
                 .append("FROM article")
                 .appendIn("WHERE id IN (?)", Arrays.asList(1L, 2L, 3L));
 
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
+
         long count = sql.selectLong(conn);
 
         assertThat(count).isEqualTo(3);
     }
+
     @DisplayName("정렬 바인딩 테스트")
     @Test
     public void selectOrderByField() throws SQLException {
@@ -313,6 +364,10 @@ class SimpleDbTest {
                 .append("FROM article")
                 .appendIn("WHERE id IN (?)", ids)
                 .appendIn("ORDER BY FIELD (id, ?)", ids);
+
+        if (simpleDb.isDevMode()) {
+            System.out.println(sql.getSql());
+        }
 
         List<Long> foundIds = sql.selectLongs(conn);
 
@@ -337,11 +392,19 @@ class SimpleDbTest {
                     .append(", title = ?", "제목 new")
                     .append(", body = ?", "내용 new");
 
+            if (simpleDb.isDevMode()) {
+                System.out.println(insertSql.getSql());
+            }
+
             long insertedId = insertSql.insert(conn);
 
             // Select the inserted record
             Sql selectSql = simpleDb.genSql();
             selectSql.append("SELECT * FROM article WHERE id = ?", insertedId);
+
+            if (simpleDb.isDevMode()) {
+                System.out.println(selectSql.getSql());
+            }
 
             Map<String, Object> rowData = selectSql.selectRow(conn);
 
@@ -352,6 +415,10 @@ class SimpleDbTest {
             // Update the inserted record
             Sql updateSql = simpleDb.genSql();
             updateSql.append("UPDATE article SET title = ? WHERE id = ?", "제목 수정", insertedId);
+
+            if (simpleDb.isDevMode()) {
+                System.out.println(updateSql.getSql());
+            }
 
             updateSql.update(conn);
 
@@ -367,6 +434,7 @@ class SimpleDbTest {
             }
         }
     }
+
     @DisplayName("트랜잭션 롤백 테스트")
     @Test
     public void transactionTestWithRollback() {
@@ -381,13 +449,17 @@ class SimpleDbTest {
             originalData = selectSql.selectRow(conn);
 
             // 트랜잭션 시작
-            conn.setAutoCommit(false);
+            simpleDb.startTransaction(conn);
 
             // 데이터를 수정합니다.
             Sql updateSql = simpleDb.genSql();
             updateSql.append("UPDATE article")
                     .append("SET modifiedDate = NOW(), title = ?", "Updated Title")
                     .append("WHERE id = ?", 1);
+
+            if (simpleDb.isDevMode()) {
+                System.out.println(updateSql.getSql());
+            }
 
             updateSql.update(conn);
 
@@ -398,20 +470,12 @@ class SimpleDbTest {
             e.printStackTrace();
             // 트랜잭션 롤백
             if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                simpleDb.rollbackTransaction(conn);
             }
         } finally {
             if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    simpleDb.releaseConnection(conn);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+                simpleDb.endTransaction(conn);
+                simpleDb.releaseConnection(conn);
             }
         }
 
