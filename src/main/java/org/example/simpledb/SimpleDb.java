@@ -4,8 +4,8 @@ import jdk.jfr.DataAmount;
 import lombok.Data;
 
 import java.sql.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Map;
+import java.util.concurrent.*;
 
 @Data
 public class SimpleDb {
@@ -14,6 +14,9 @@ public class SimpleDb {
     private final String username;
     private final String password;
     private boolean devMode;
+
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final Map<Connection, Long> connectionTimestamps = new ConcurrentHashMap<>();
 
     private final int MAX_POOL_SIZE = 2;
 
@@ -27,6 +30,21 @@ public class SimpleDb {
         this.password = password;
 
         initializeConnectionPool();
+        startConnectionTimeoutCheck();
+    }
+
+    private void startConnectionTimeoutCheck() {
+        scheduler.scheduleAtFixedRate(() -> {
+            long currentTime = System.currentTimeMillis();
+            for (Map.Entry<Connection, Long> entry : connectionTimestamps.entrySet()) {
+                Connection connection = entry.getKey();
+                long lastUsedTime = entry.getValue();
+
+                if (currentTime - lastUsedTime > 30000) { // 30초 경과 체크
+                    releaseConnection(connection);
+                }
+            }
+        }, 0, 10, TimeUnit.SECONDS); // 10초마다 커넥션 사용 시간 확인
     }
 
     public void setDevMod(boolean devMode) {
@@ -39,12 +57,41 @@ public class SimpleDb {
             for (int i = 0; i < MAX_POOL_SIZE; i++) {
                 connectionPool.offer(createConnection());
             }
+            startConnectionTimeoutCheck(); // 주기적으로 커넥션 사용 시간 확인 시작
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
     public int getAvailableConnectionCount() {
         return connectionPool.size();
+    }
+
+    public void startTransaction(Connection conn) throws SQLException {
+        System.out.println("== 트랜잭션 시작 ==");
+        conn.setAutoCommit(false);
+    }
+
+    public void commitTransaction(Connection conn) throws SQLException {
+        System.out.println("== 트랜잭션 커밋 ==");
+        conn.commit();
+    }
+
+    public void rollbackTransaction(Connection conn) {
+        try {
+            System.out.println("== 트랜잭션 롤백 ==");
+            conn.rollback();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void endTransaction(Connection conn) {
+        try {
+            System.out.println("== 트랜잭션 종료 ==");
+            conn.setAutoCommit(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private Connection createConnection() throws SQLException {
@@ -61,6 +108,7 @@ public class SimpleDb {
                 e.printStackTrace();
             }
         }
+        connectionTimestamps.put(connection, System.currentTimeMillis()); // 사용 시간 갱신
         return connection;
     }
 
@@ -68,6 +116,7 @@ public class SimpleDb {
         if (connection != null) {
             connectionPool.offer(connection);
             threadLocalConnection.remove();
+            connectionTimestamps.remove(connection); // 사용 시간 정보 제거
         }
     }
 
