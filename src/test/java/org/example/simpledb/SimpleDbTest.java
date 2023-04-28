@@ -2,10 +2,7 @@ package org.example.simpledb;
 
 import org.example.simpledb.article.Article;
 import org.example.simpledb.article.Column;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -91,6 +88,7 @@ class SimpleDbTest {
         simpleDb.run("TRUNCATE article");
     }
 
+    @DisplayName("레코드 생성 테스트")
     @Test
     public void insert() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -107,7 +105,7 @@ class SimpleDbTest {
         assertThat(newId).isGreaterThan(0);
 
     }
-
+    @DisplayName("레코드 수정 테스트")
     @Test
     public void update() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -131,7 +129,7 @@ class SimpleDbTest {
 
         assertThat(affectedRowsCount).isEqualTo(3);
     }
-
+    @DisplayName("레코드 삭제 테스트")
     @Test
     public void delete() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -153,7 +151,7 @@ class SimpleDbTest {
 
         assertThat(affectedRowsCount).isEqualTo(2);
     }
-
+    @DisplayName("DB 현재 시간 조회 테스트")
     @Test
     public void selectDatetime() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -170,7 +168,7 @@ class SimpleDbTest {
 
         assertThat(diff).isLessThanOrEqualTo(1L);
     }
-
+    @DisplayName("레코드 ID값 조회 테스트")
     @Test
     public void selectLong() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -190,7 +188,7 @@ class SimpleDbTest {
 
         assertThat(id).isEqualTo(1);
     }
-
+    @DisplayName("레코드 제목 조회 테스트")
     @Test
     public void selectString() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -211,7 +209,7 @@ class SimpleDbTest {
 
         assertThat(title).isEqualTo("제목1");
     }
-
+    @DisplayName("레코드 전체 조회 테스트")
     @Test
     public void selectRow() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -234,7 +232,7 @@ class SimpleDbTest {
         assertThat(articleMap.get("modifiedDate")).isInstanceOf(LocalDateTime.class);
         assertThat(articleMap.get("isBlind")).isEqualTo(false);
     }
-
+    @DisplayName("레코드 3개 리밋 조회 테스트")
     @Test
     public void selectArticles() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -263,7 +261,7 @@ class SimpleDbTest {
             assertThat(articleDto.getIsBlind()).isFalse();
         });
     }
-
+    @DisplayName("파라미터 바인딩 테스트")
     @Test
     public void selectBind() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -278,7 +276,7 @@ class SimpleDbTest {
 
         assertThat(count).isEqualTo(3);
     }
-
+    @DisplayName("IN 절 테스트")
     @Test
     public void selectIn() throws SQLException {
         Sql sql = simpleDb.genSql();
@@ -298,7 +296,7 @@ class SimpleDbTest {
 
         assertThat(count).isEqualTo(3);
     }
-
+    @DisplayName("정렬 바인딩 테스트")
     @Test
     public void selectOrderByField() throws SQLException {
         List<Long> ids = Arrays.asList(2L, 3L, 1L);
@@ -322,7 +320,7 @@ class SimpleDbTest {
     }
 
 
-
+    @DisplayName("트랜잭션 커밋전 조회시 이전 내용 확인 테스트")
     @Test
     public void transactionTest() {
         Connection conn = null;
@@ -369,7 +367,7 @@ class SimpleDbTest {
             }
         }
     }
-
+    @DisplayName("트랜잭션 롤백 테스트")
     @Test
     public void transactionTestWithRollback() {
         Connection conn = null;

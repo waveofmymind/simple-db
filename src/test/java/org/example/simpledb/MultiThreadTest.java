@@ -15,9 +15,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
+import static org.junit.jupiter.api.Assertions.*;
+@DisplayName("멀티스레드 테스트")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 
@@ -64,6 +63,7 @@ public class MultiThreadTest {
     }
 
 
+    @DisplayName("두번째 태스크가 먼저 실행되고, 5초 후에 첫번째 태스크가 실행된다.")
     @Test
     @Order(1)
     public void selectRowMultiThreaded() throws InterruptedException, SQLException {
@@ -124,7 +124,7 @@ public class MultiThreadTest {
         latch.await(); // Wait for both tasks to complete
         executor.shutdown();
     }
-
+    @DisplayName("커넥션 풀의 용량을 초과하는 쓰레드가 실행되면, 쓰레드가 종료되기 전까지 대기한다.")
     @Test
     @Order(2)
     public void testConnectionPoolCapacity() throws InterruptedException {
@@ -160,9 +160,10 @@ public class MultiThreadTest {
         latch.await(); // 모든 쓰레드가 작업을 완료할 때까지 기다림
 
         int availableConnections = simpleDb.getAvailableConnectionCount();
-        assertEquals(2, availableConnections); // 커넥션 풀의 사용 가능한 커넥션 수 확인
+        assertEquals(1, availableConnections); // 커넥션 풀의 사용 가능한 커넥션 수 확인
     }
 
+    @DisplayName("쓰레드당 커넥션을 최대 30초까지 사용하고 자동 반납한다.")
     @Test
     @Order(3)
     public void testConnectionTimeout() throws InterruptedException {
@@ -189,7 +190,7 @@ public class MultiThreadTest {
         // 두 번째 쓰레드 작업: 31초 후에 커넥션을 요청하고, 사용 가능한지 확인
         Runnable secondThreadTask = () -> {
             try {
-                Thread.sleep(31000); // 31초 대기
+                Thread.sleep(31000);
                 Connection conn = simpleDb.getConnection();
                 assertNotNull(conn);
             } catch (SQLException | InterruptedException e) {
@@ -206,6 +207,55 @@ public class MultiThreadTest {
         latch.await();
         executor.shutdown();
     }
+
+    @DisplayName("한 쓰레드에서 생성된 커넥션이 30초후 자동 반납되고, 그 이후에 다른 쓰레드에서 커넥션을 가져올 수 있다.")
+    @Test
+    @Order(4)
+    public void testConnectionPoolSizeOne() throws InterruptedException {
+        // 쓰레드 풀 생성
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(2);
+
+        // 첫 번째 쓰레드 작업: 커넥션을 가져온 후 35초 동안 대기
+        Runnable firstThreadTask = () -> {
+            Connection conn = null;
+            try {
+                conn = simpleDb.getConnection();
+                Thread.sleep(35000); // 35초 대기
+            } catch (SQLException | InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                if (conn != null) {
+                    simpleDb.releaseConnection(conn);
+                }
+                latch.countDown();
+            }
+        };
+
+        // 두 번째 쓰레드 작업: 15초 후에 커넥션을 요청하고, 사용 가능한지 확인
+        Runnable secondThreadTask = () -> {
+            try {
+                Thread.sleep(15000); // 15초 대기
+                long startTime = System.currentTimeMillis();
+                Connection conn = simpleDb.getConnection();
+                long elapsedTime = System.currentTimeMillis() - startTime;
+                assertTrue(elapsedTime >= 15000);
+                assertNotNull(conn);
+            } catch (SQLException | InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                latch.countDown();
+            }
+        };
+
+        // 쓰레드 작업 제출
+        executor.submit(firstThreadTask);
+        executor.submit(secondThreadTask);
+        // 모든 작업이 완료될 때까지 대기
+        latch.await();
+        executor.shutdown();
+    }
+
 
 
 
