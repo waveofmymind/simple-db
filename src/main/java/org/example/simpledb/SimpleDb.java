@@ -18,7 +18,9 @@ public class SimpleDb {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Map<Connection, Long> connectionTimestamps = new ConcurrentHashMap<>();
 
-    private final int MAX_POOL_SIZE = 1;
+    private final int MAX_POOL_SIZE=1;
+
+    private final int CONNECTION_TIME_OUT=10;
 
     private BlockingQueue<Connection> connectionPool;
 
@@ -44,7 +46,7 @@ public class SimpleDb {
                     releaseConnection(connection);
                 }
             }
-        }, 0, 10, TimeUnit.SECONDS); // 10초마다 커넥션 사용 시간 확인
+        }, 0, CONNECTION_TIME_OUT, TimeUnit.SECONDS); // 10초마다 커넥션 사용 시간 확인
     }
 
     public void setDevMod(boolean devMode) {
@@ -179,10 +181,8 @@ public class SimpleDb {
         }
     }
     public Sql genSql() throws SQLException {
-        return new Sql(this);
+        return new Sql();
     }
-
-
 
 
 }
