@@ -1,6 +1,5 @@
 package org.example.simpledb;
 
-import jdk.jfr.DataAmount;
 import lombok.Data;
 
 import java.sql.*;

@@ -1,8 +1,7 @@
 package org.example.simpledb;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.example.simpledb.article.Article;
+
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -15,7 +14,7 @@ public class Sql {
     private final StringBuilder sqlBuilder;
     private final List<Object> parameters;
 
-    public Sql() throws SQLException {
+    public Sql() {
         this.sqlBuilder = new StringBuilder();
         this.parameters = new ArrayList<>();
     }
