@@ -18,7 +18,7 @@ public class SimpleDb {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Map<Connection, Long> connectionTimestamps = new ConcurrentHashMap<>();
 
-    private final int MAX_POOL_SIZE = 2;
+    private final int MAX_POOL_SIZE = 1;
 
     private BlockingQueue<Connection> connectionPool;
 
