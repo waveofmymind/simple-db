@@ -1,6 +1,7 @@
 package org.example.simpledb.article;
 
 import lombok.Data;
+import org.example.simpledb.Column;
 
 import java.time.LocalDateTime;
 

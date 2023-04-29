@@ -1,7 +1,6 @@
 package org.example.simpledb;
 
 import org.example.simpledb.article.Article;
-import org.example.simpledb.article.Column;
 import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;

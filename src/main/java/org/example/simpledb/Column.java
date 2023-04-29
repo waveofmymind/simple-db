@@ -1,4 +1,4 @@
-package org.example.simpledb.article;
+package org.example.simpledb;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
