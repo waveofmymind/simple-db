@@ -2,6 +2,7 @@ package org.example.simpledb;
 
 import lombok.Data;
 
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -182,6 +183,39 @@ public class SimpleDb {
     public Sql genSql() throws SQLException {
         return new Sql();
     }
+
+
+    public void generateDDL(Class<?> clazz) throws SQLException {
+        Connection conn = getConnection();
+        StringBuilder ddl = new StringBuilder("CREATE TABLE ");
+        ddl.append(clazz.getSimpleName().toLowerCase()).append(" (\n");
+
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field field : fields) {
+            Column column = field.getAnnotation(Column.class);
+
+            if (column != null) {
+                ddl.append(field.getName()).append(" ").append(column.type());
+
+                if (!column.nullable()) {
+                    ddl.append(" NOT NULL");
+                }
+
+                if (!column.defaultValue().isEmpty()) {
+                    ddl.append(" DEFAULT ").append(column.defaultValue());
+                }
+                ddl.append(",\n");
+            }
+        }
+
+        // 마지막 콤마 제거 및 괄호 닫기
+        ddl.setLength(ddl.length() - 2);
+        ddl.append("\n)");
+        System.out.println(ddl);
+
+        run(ddl.toString());
+    }
+
 
 
 }

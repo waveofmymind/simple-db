@@ -11,6 +11,7 @@ import java.sql.*;
 
 @Data
 public class Sql {
+
     private final StringBuilder sqlBuilder;
     private final List<Object> parameters;
 
@@ -62,7 +63,6 @@ public class Sql {
         String sql = getSql();
         Object[] parameters = getParameters();
 
-
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 0; i < parameters.length; i++) {
                 pstmt.setObject(i + 1, parameters[i]);
@@ -74,7 +74,6 @@ public class Sql {
                     return rs.getLong(1);
                 }
             }
-            System.out.println(sql);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -109,23 +108,14 @@ public class Sql {
     }
 
     public long update(Connection conn) {
-        String sql = getSql();
-        Object[] parameters = getParameters();
-
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (int i = 0; i < parameters.length; i++) {
-                pstmt.setObject(i + 1, parameters[i]);
-            }
-            return pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-
-        }
-        return -1;
+        return executeUpdate(conn);
     }
 
     public long delete(Connection conn) {
+        return executeUpdate(conn);
+    }
+
+    private long executeUpdate(Connection conn) {
         String sql = getSql();
         Object[] parameters = getParameters();
 
@@ -136,6 +126,7 @@ public class Sql {
             return pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
+
         }
         return -1;
     }
@@ -224,4 +215,5 @@ public class Sql {
         }
         return result;
     }
+
 }

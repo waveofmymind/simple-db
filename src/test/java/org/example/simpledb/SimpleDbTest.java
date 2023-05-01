@@ -21,12 +21,12 @@ class SimpleDbTest {
     private SimpleDb simpleDb;
 
     @BeforeAll
-    public void beforeAll() {
+    public void beforeAll() throws SQLException {
         simpleDb = new SimpleDb("localhost", "wave", "0913", "simpleDb__test");
         simpleDb.setDevMod(true);
+        Sql sql = simpleDb.genSql();
 
-//        createArticleTable();
-        System.out.println(generateDDL(Article.class));
+        simpleDb.generateDDL(Article.class);
     }
 
     @BeforeEach
@@ -35,34 +35,6 @@ class SimpleDbTest {
         makeArticleTestData();
     }
 
-    public String generateDDL(Class<?> clazz) {
-        StringBuilder ddl = new StringBuilder("CREATE TABLE ");
-        ddl.append(clazz.getSimpleName().toUpperCase()).append(" (\n");
-
-        Field[] fields = clazz.getDeclaredFields();
-        for (Field field : fields) {
-            Column column = field.getAnnotation(Column.class);
-
-            if (column != null) {
-                ddl.append(field.getName().toUpperCase()).append(" ").append(column.type());
-
-                if (!column.nullable()) {
-                    ddl.append(" NOT NULL");
-                }
-
-                if (!column.defaultValue().isEmpty()) {
-                    ddl.append(" DEFAULT ").append(column.defaultValue());
-                }
-                ddl.append(",\n");
-            }
-        }
-
-        // 마지막 콤마 제거 및 괄호 닫기
-        ddl.setLength(ddl.length() - 2);
-        ddl.append("\n)");
-
-        return ddl.toString();
-    }
 
 
     private void makeArticleTestData() {
@@ -79,6 +51,7 @@ class SimpleDbTest {
                     `body` = ?,
                     isBlind = ?
                     """, title, body, isBlind);
+
         });
     }
 
