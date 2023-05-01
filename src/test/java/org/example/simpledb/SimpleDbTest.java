@@ -36,7 +36,6 @@ class SimpleDbTest {
     }
 
 
-
     private void makeArticleTestData() {
         IntStream.rangeClosed(1, 6).forEach(no -> {
             boolean isBlind = no > 3;
@@ -63,7 +62,6 @@ class SimpleDbTest {
     @Test
     public void insert() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
 
         sql.append("INSERT INTO article")
                 .append("SET createdDate = NOW()")
@@ -74,7 +72,7 @@ class SimpleDbTest {
         if (simpleDb.isDevMode()) {
             System.out.println(sql.getSql());
         }
-        long newId = sql.insert(conn);
+        long newId = sql.insert();
 
         assertThat(newId).isGreaterThan(0);
 
@@ -84,7 +82,6 @@ class SimpleDbTest {
     @Test
     public void update() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
         // id가 0, 1, 2, 3인 글 수정
         // id가 0인 글은 없으니, 실제로는 3개의 글이 삭제됨
 
@@ -104,7 +101,7 @@ class SimpleDbTest {
         }
 
         // 수정된 row 개수
-        long affectedRowsCount = sql.update(conn);
+        long affectedRowsCount = sql.update();
 
         assertThat(affectedRowsCount).isEqualTo(3);
     }
@@ -113,8 +110,6 @@ class SimpleDbTest {
     @Test
     public void delete() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
-
         // id가 0, 1, 3인 글 삭제
         // id가 0인 글은 없으니, 실제로는 2개의 글이 삭제됨
         /*
@@ -131,7 +126,7 @@ class SimpleDbTest {
         }
 
         // 삭제된 row 개수
-        long affectedRowsCount = sql.delete(conn);
+        long affectedRowsCount = sql.delete();
 
         assertThat(affectedRowsCount).isEqualTo(2);
     }
@@ -140,8 +135,6 @@ class SimpleDbTest {
     @Test
     public void selectDatetime() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
-
         /*
         == rawSql ==
         SELECT NOW()
@@ -152,7 +145,7 @@ class SimpleDbTest {
             System.out.println(sql.getSql());
         }
 
-        LocalDateTime datetime = sql.selectDatetime(conn);
+        LocalDateTime datetime = sql.selectDatetime();
 
         long diff = ChronoUnit.SECONDS.between(datetime, LocalDateTime.now());
 
@@ -163,14 +156,7 @@ class SimpleDbTest {
     @Test
     public void selectLong() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
 
-        /*
-        == rawSql ==
-        SELECT id
-        FROM article
-        WHERE id = 1
-        */
         sql.append("SELECT id")
                 .append("FROM article")
                 .append("WHERE id = 1");
@@ -179,7 +165,7 @@ class SimpleDbTest {
             System.out.println(sql.getSql());
         }
 
-        Long id = sql.selectLong(conn);
+        Long id = sql.selectLong();
 
         assertThat(id).isEqualTo(1);
     }
@@ -189,14 +175,6 @@ class SimpleDbTest {
     public void selectString() throws SQLException {
         Sql sql = simpleDb.genSql();
 
-        Connection conn = simpleDb.getConnection();
-
-        /*
-        == rawSql ==
-        SELECT title
-        FROM article
-        WHERE id = 1
-        */
         sql.append("SELECT title")
                 .append("FROM article")
                 .append("WHERE id = 1");
@@ -205,7 +183,7 @@ class SimpleDbTest {
             System.out.println(sql.getSql());
         }
 
-        String title = sql.selectString(conn);
+        String title = sql.selectString();
 
         assertThat(title).isEqualTo("제목1");
     }
@@ -215,21 +193,13 @@ class SimpleDbTest {
     public void selectRow() throws SQLException {
         Sql sql = simpleDb.genSql();
 
-        Connection conn = simpleDb.getConnection();
-
-        /*
-        == rawSql ==
-        SELECT *
-        FROM article
-        WHERE id = 1
-        */
         sql.append("SELECT * FROM article WHERE id = 1");
 
         if (simpleDb.isDevMode()) {
             System.out.println(sql.getSql());
         }
 
-        Map<String, Object> articleMap = sql.selectRow(conn);
+        Map<String, Object> articleMap = sql.selectRow();
 
         assertThat(articleMap.get("id")).isEqualTo(1L);
         assertThat(articleMap.get("title")).isEqualTo("제목1");
@@ -243,22 +213,14 @@ class SimpleDbTest {
     @Test
     public void selectArticles() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
 
-        /*
-        == rawSql ==
-        SELECT *
-        FROM article
-        ORDER BY id ASC
-        LIMIT 3
-        */
         sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
 
         if (simpleDb.isDevMode()) {
             System.out.println(sql.getSql());
         }
 
-        List<Article> articleDtoList = sql.selectRows(conn, Article.class);
+        List<Article> articleDtoList = sql.selectRows(Article.class);
 
         IntStream.range(0, articleDtoList.size()).forEach(i -> {
             long id = i + 1;
@@ -278,7 +240,6 @@ class SimpleDbTest {
     @Test
     public void selectBind() throws SQLException {
         Sql sql = simpleDb.genSql();
-        Connection conn = simpleDb.getConnection();
 
         sql.append("SELECT COUNT(*)")
                 .append("FROM article")
@@ -289,7 +250,7 @@ class SimpleDbTest {
             System.out.println(sql.getSql());
         }
 
-        long count = sql.selectLong(conn);
+        long count = sql.selectLong();
 
         assertThat(count).isEqualTo(3);
     }
@@ -323,15 +284,9 @@ class SimpleDbTest {
     @Test
     public void selectOrderByField() throws SQLException {
         List<Long> ids = Arrays.asList(2L, 3L, 1L);
-        Connection conn = simpleDb.getConnection();
 
         Sql sql = simpleDb.genSql();
-        /*
-        SELECT id
-        FROM article
-        WHERE id IN ('2','3','1')
-        ORDER BY FIELD (id, '2','3','1')
-        */
+
         sql.append("SELECT id")
                 .append("FROM article")
                 .appendIn("WHERE id IN (?)", ids)
@@ -341,7 +296,7 @@ class SimpleDbTest {
             System.out.println(sql.getSql());
         }
 
-        List<Long> foundIds = sql.selectLongs(conn);
+        List<Long> foundIds = sql.selectLongs();
 
         assertThat(foundIds).isEqualTo(ids);
     }
@@ -349,14 +304,11 @@ class SimpleDbTest {
 
     @DisplayName("트랜잭션 커밋전 조회시 이전 내용 확인 테스트")
     @Test
-    public void transactionTest() {
-        Connection conn = null;
+    public void transactionTest() throws SQLException {
+        Connection conn = simpleDb.getConnection();
         try {
-            conn = simpleDb.getConnection();
-
             // 트랜잭션 시작
             simpleDb.startTransaction(conn);
-            // Insert a new record
             Sql insertSql = simpleDb.genSql();
             insertSql.append("INSERT INTO article")
                     .append("SET createdDate = NOW()")
@@ -368,7 +320,7 @@ class SimpleDbTest {
                 System.out.println(insertSql.getSql());
             }
 
-            long insertedId = insertSql.insert(conn);
+            long insertedId = insertSql.insert();
 
             // Select the inserted record
             Sql selectSql = simpleDb.genSql();
@@ -380,11 +332,9 @@ class SimpleDbTest {
 
             Map<String, Object> rowData = selectSql.selectRow(conn);
 
-            // Assert the inserted record data
-            assertThat(rowData.get("id")).isEqualTo(insertedId);
+            assertThat((rowData.get("id"))).isEqualTo(insertedId);
             assertThat(rowData.get("title")).isEqualTo("제목 new");
 
-            // Update the inserted record
             Sql updateSql = simpleDb.genSql();
             updateSql.append("UPDATE article SET title = ? WHERE id = ?", "제목 수정", insertedId);
 
@@ -392,7 +342,7 @@ class SimpleDbTest {
                 System.out.println(updateSql.getSql());
             }
 
-            updateSql.update(conn);
+            updateSql.update();
 
             // 트랜잭션 커밋
             simpleDb.commitTransaction(conn);
@@ -409,16 +359,15 @@ class SimpleDbTest {
 
     @DisplayName("트랜잭션 롤백 테스트")
     @Test
-    public void transactionTestWithRollback() {
-        Connection conn = null;
+    public void transactionTestWithRollback() throws SQLException {
         Map<String, Object> originalData = null;
+        Connection conn = simpleDb.getConnection();
 
         try {
-            conn = simpleDb.getConnection();
             // 트랜잭션 시작 전 원본 데이터를 가져옵니다.
             Sql selectSql = simpleDb.genSql();
             selectSql.append("SELECT * FROM article WHERE id = ?", 1);
-            originalData = selectSql.selectRow(conn);
+            originalData = selectSql.selectRow();
 
             // 트랜잭션 시작
             simpleDb.startTransaction(conn);
@@ -433,7 +382,7 @@ class SimpleDbTest {
                 System.out.println(updateSql.getSql());
             }
 
-            updateSql.update(conn);
+            updateSql.update();
 
             // 의도적으로 예외를 발생시킵니다.
             throw new SQLException("SQL 예외 의도적으로 발생");
@@ -441,28 +390,24 @@ class SimpleDbTest {
         } catch (SQLException e) {
             e.printStackTrace();
             // 트랜잭션 롤백
-            if (conn != null) {
-                simpleDb.rollbackTransaction(conn);
-            }
-        } finally {
-            if (conn != null) {
-                simpleDb.endTransaction(conn);
-                simpleDb.releaseConnection(conn);
-            }
-        }
+            simpleDb.rollbackTransaction(conn);
+            System.out.println("Transaction rolled back.");
 
+        } finally {
+            simpleDb.endTransaction(conn);
+            simpleDb.releaseConnection(conn);
+
+        }
         Map<String, Object> afterRollbackData = null;
         try {
-            conn = simpleDb.getConnection();
             Sql selectSql = simpleDb.genSql();
             selectSql.append("SELECT * FROM article WHERE id = ?", 1);
-            afterRollbackData = selectSql.selectRow(conn);
+            afterRollbackData = selectSql.selectRow();
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            if (conn != null) {
-                simpleDb.releaseConnection(conn);
-            }
+            simpleDb.releaseConnection(conn);
+
         }
 
         // 롤백이 실행되었다면, 원본 데이터와 롤백 후 데이터가 동일해야 합니다.
