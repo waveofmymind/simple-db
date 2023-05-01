@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 public class Article {
 
-    @Column(type = "BIGINT UNSIGNED AUTO_INCREMENT", nullable = true)
+    @Column(type = "INT UNSIGNED AUTO_INCREMENT", nullable = true)
     private Long id;
     @Column(type = "VARCHAR(100)", nullable = true)
     private String title;
